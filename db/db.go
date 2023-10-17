@@ -45,7 +45,7 @@ type BlacklistItem struct {
 	Last   int64    `json:"last"`
 }
 
-func InitDatabase() error {
+func Initialize() error {
 	err := InitAppID()
 	if err != nil {
 		return err

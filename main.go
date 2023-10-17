@@ -15,7 +15,7 @@ func main() {
 	logger.Logger.Debug("program started")
 	flag.IntVar(&port, "port", 3518, "Server port number.")
 
-	if err := db.InitDatabase(); err != nil {
+	if err := db.Initialize(); err != nil {
 		logger.Logger.Fatalf("database initialization error: %v", err)
 	}
 
