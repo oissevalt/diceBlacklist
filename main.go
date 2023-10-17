@@ -15,9 +15,12 @@ func main() {
 	logger.Logger.Debug("program started")
 	flag.IntVar(&port, "port", 3518, "Server port number.")
 
-	err := db.InitDatabase()
-	if err != nil {
+	if err := db.InitDatabase(); err != nil {
 		logger.Logger.Fatalf("database initialization error: %v", err)
+	}
+
+	if err := db.Watch(); err != nil {
+		logger.Logger.Errorf("failed to initialize file watcher: %v", err)
 	}
 
 	http.HandleFunc("/query", api.Limit(api.Query))
@@ -27,10 +30,7 @@ func main() {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 	})
 	logger.Logger.Infof("server running on port %d", port)
-	if serverErr := http.ListenAndServe(
-		fmt.Sprintf(":%d", port),
-		nil,
-	); serverErr != nil {
-		logger.Logger.Errorf("server error: %v", serverErr)
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+		logger.Logger.Errorf("server error: %v", err)
 	}
 }

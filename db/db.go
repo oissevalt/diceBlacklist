@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
-	"os"
 	"slices"
 )
 
@@ -59,32 +58,6 @@ func InitDatabase() error {
 	_, err = Database.Exec(initTable)
 	if err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func InitAppID() (err error) {
-	clientId = []string{}
-	con, err := os.ReadFile("appid.json")
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			logger.Logger.Warn("`appid.json` not found, creating a new one")
-			file, err2 := os.Create("appid.json")
-			if err2 != nil {
-				return err2
-			}
-			_, _ = file.WriteString("[]")
-		} else {
-			return err
-		}
-	}
-
-	if con != nil && len(con) > 0 {
-		err = json.Unmarshal(con, &clientId)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
