@@ -13,14 +13,14 @@ func Report(w http.ResponseWriter, r *http.Request) {
 	client := r.Header.Get("appid")
 	if client == "" || !db.Authenticate(client) {
 		logger.Logger.Info("client is not permitted to add to blacklist")
-		Response(w, "Forbidden", http.StatusForbidden)
+		Respond(w, "Forbidden", http.StatusForbidden)
 		return
 	}
 
 	id, ok := Sanitize(r.URL.Query().Get("id"))
 	reason := r.URL.Query().Get("for")
 	if !ok || id == "" || reason == "" || r.Method != http.MethodPost {
-		Response(w, "Bad Request", http.StatusBadRequest)
+		Respond(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
@@ -28,7 +28,7 @@ func Report(w http.ResponseWriter, r *http.Request) {
 	err := db.Add(id, reason, ts)
 	if err != nil { // ErrNoRows excluded
 		logger.Logger.Errorf("failed to add item %s: %v", id, err)
-		Response(w, "Internal Server Error", http.StatusInternalServerError)
+		Respond(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 

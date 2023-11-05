@@ -110,6 +110,9 @@ func Add(id, reason string, timestamp int64) error {
 			if err != nil {
 				return err
 			}
+
+			res = new(BlacklistItem)
+			res.Reason = []string{}
 		} else {
 			return err
 		}
@@ -118,6 +121,9 @@ func Add(id, reason string, timestamp int64) error {
 	res.Reason = append(res.Reason, reason)
 	res.Last = timestamp
 	r, err := json.Marshal(res.Reason)
+	if err != nil {
+		return err
+	}
 
 	stmt, err := Database.Prepare(updateRow)
 	if err != nil {

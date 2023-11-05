@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func Response(w http.ResponseWriter, message string, status int) {
+func Respond(w http.ResponseWriter, message string, status int) {
 	http.Error(w, message, status)
 	logger.Logger.Infof("server responded with HTTP %d: %s", status, message)
 }

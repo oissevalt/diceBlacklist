@@ -14,7 +14,7 @@ func Query(w http.ResponseWriter, r *http.Request) {
 
 	id, _ := Sanitize(r.URL.Query().Get("id"))
 	if id == "" || r.Method != http.MethodGet {
-		Response(w, "Bad Request", http.StatusBadRequest)
+		Respond(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
@@ -22,11 +22,11 @@ func Query(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			logger.Logger.Debugf("query for %s selected no rows", id)
-			Response(w, "Not Found", http.StatusNotFound)
+			Respond(w, "Not Found", http.StatusNotFound)
 			return
 		}
 		logger.Logger.Errorf("query for %s terminated with error: %v", id, err)
-		Response(w, "Internal Server Error", http.StatusInternalServerError)
+		Respond(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 	logger.Logger.Debugf("queried data: %v", res)
@@ -34,7 +34,7 @@ func Query(w http.ResponseWriter, r *http.Request) {
 	con, err := json.Marshal(*res)
 	if err != nil {
 		logger.Logger.Errorf("failed to marshal item %s: %v", id, err)
-		Response(w, "Internal Server Error", http.StatusInternalServerError)
+		Respond(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
@@ -42,7 +42,7 @@ func Query(w http.ResponseWriter, r *http.Request) {
 	_, err = w.Write(con)
 	if err != nil {
 		logger.Logger.Errorf("failed to write response: %v", err)
-		Response(w, "Internal Server Error", http.StatusInternalServerError)
+		Respond(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 	logger.Logger.Infof("server responded with query result of %s", id)
