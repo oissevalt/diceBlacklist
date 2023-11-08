@@ -15,18 +15,18 @@ const (
 	CREATE TABLE IF NOT EXISTS blacklist(
 	    id TEXT PRIMARY KEY NOT NULL,
 	    reason TEXT,
-	    first INTEGER NOT NULL,
-	    last INTEGER
+	    initial INTEGER NOT NULL,
+	    latest INTEGER
 	)
 	`
 	queryTable = `
 	SELECT * FROM blacklist WHERE id = ?
 	`
 	insertRow = `
-	INSERT INTO blacklist (id, reason, first, last) VALUES (?, ?, ?, ?)
+	INSERT INTO blacklist (id, reason, initial, latest) VALUES (?, ?, ?, ?)
 	`
 	updateRow = `
-	UPDATE blacklist SET reason = ?, last = ? WHERE id = ?
+	UPDATE blacklist SET reason = ?, latest = ? WHERE id = ?
 	`
 	deleteRow = `
 	DELETE FROM blacklist WHERE id = ?
@@ -41,8 +41,8 @@ var (
 type BlacklistItem struct {
 	Id     string   `json:"id"`
 	Reason []string `json:"reason"`
-	First  int64    `json:"first"`
-	Last   int64    `json:"last"`
+	First  int64    `json:"initial"`
+	Last   int64    `json:"latest"`
 }
 
 func Initialize() error {
@@ -99,7 +99,7 @@ func Add(id, reason string, timestamp int64) error {
 	res, err := Query(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			r := fmt.Sprintf("[%s]", reason)
+			r := fmt.Sprintf(`["%s"]`, reason)
 			stmt, err2 := Database.Prepare(insertRow)
 			if err2 != nil {
 				return err2
@@ -107,18 +107,15 @@ func Add(id, reason string, timestamp int64) error {
 			defer stmt.Close()
 
 			_, err = stmt.Exec(id, r, timestamp, timestamp)
-			if err != nil {
-				return err
-			}
-
-			res = new(BlacklistItem)
-			res.Reason = []string{}
+			return err
 		} else {
 			return err
 		}
 	}
 
-	res.Reason = append(res.Reason, reason)
+	if len(res.Reason) <= 0 || (len(res.Reason) > 0 && res.Reason[len(res.Reason)-1] != reason) {
+		res.Reason = append(res.Reason, reason)
+	}
 	res.Last = timestamp
 	r, err := json.Marshal(res.Reason)
 	if err != nil {

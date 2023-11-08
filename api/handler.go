@@ -5,13 +5,9 @@ import (
 	"net/http"
 )
 
-var limiter *rate.Limiter
+var limiter = rate.NewLimiter(3, 12)
 
-func init() {
-	limiter = rate.NewLimiter(3, 12)
-}
-
-func Limit(f func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
+func Limit(f http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if limiter.Allow() {
 			f(w, r)

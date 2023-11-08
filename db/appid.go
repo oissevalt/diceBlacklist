@@ -62,8 +62,9 @@ func watcherFunc(w *fsnotify.Watcher) {
 				"file watcher detected changes to %s: %v",
 				event.Name,
 				event.Op)
-			// Some editors use temp file, then it will trigger CHMOD, REMOVE and CREATE.
-			// This makes things too complicated so it's ignored.
+			// Some editors create a temporary file, so they will trigger
+			// CHMOD, REMOVE and CREATE at once. For the sake of simplicity
+			// this is not planned to be handled.
 			if event.Has(fsnotify.Write) {
 				if err := InitAppID(); err != nil {
 					logger.Logger.Errorf("failed to reload appid list: %v", err)

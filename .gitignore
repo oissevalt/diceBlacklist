@@ -29,6 +29,6 @@ go.work
 
 # Application-specific
 appid.json
-blacklist.sqlite.db
+*.db
 log
 *.log
