@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
-	"slices"
 )
 
 const (
@@ -46,7 +45,7 @@ type BlacklistItem struct {
 }
 
 func Initialize() error {
-	err := InitAppID()
+	err := ReadAppID()
 	if err != nil {
 		return err
 	}
@@ -65,8 +64,12 @@ func Initialize() error {
 
 func Authenticate(id string) bool {
 	logger.Logger.Debugf("authenticating client %s", id)
-	_, found := slices.BinarySearch(clientId, id)
-	return found
+	for _, i := range clientId {
+		if i == id {
+			return true
+		}
+	}
+	return false
 }
 
 func Query(id string) (*BlacklistItem, error) {

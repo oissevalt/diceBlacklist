@@ -8,8 +8,11 @@ import (
 	"os"
 )
 
-func InitAppID() (err error) {
+func init() {
 	clientId = []string{}
+}
+
+func ReadAppID() (err error) {
 	con, err := os.ReadFile("appid.json")
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -66,7 +69,7 @@ func watcherFunc(w *fsnotify.Watcher) {
 			// CHMOD, REMOVE and CREATE at once. For the sake of simplicity
 			// this is not planned to be handled.
 			if event.Has(fsnotify.Write) {
-				if err := InitAppID(); err != nil {
+				if err := ReadAppID(); err != nil {
 					logger.Logger.Errorf("failed to reload appid list: %v", err)
 					return
 				}
