@@ -7,6 +7,10 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"io"
+	"os"
+	"sync/atomic"
+	"time"
 )
 
 const (
@@ -35,7 +39,13 @@ const (
 var (
 	Database *sql.DB
 	clientId []string
+	Running  = new(atomic.Bool)
 )
+
+func init() {
+	clientId = []string{}
+	Running.Store(false)
+}
 
 type BlacklistItem struct {
 	Id     string   `json:"id"`
@@ -54,6 +64,8 @@ func Initialize() error {
 	if err != nil {
 		return err
 	}
+	Running.Store(true)
+
 	_, err = Database.Exec(initTable)
 	if err != nil {
 		return err
@@ -160,4 +172,57 @@ func Remove(id string) (error, bool) {
 	}
 
 	return nil, true
+}
+
+func backup(interval time.Duration) {
+	for {
+		select {
+		case <-time.After(interval):
+			logger.Logger.Debug("start backup, database down")
+
+			if s, err := os.Stat("backups"); err != nil || (s != nil && !s.IsDir()) {
+				if err = os.MkdirAll("backups", 0755); err != nil {
+					logger.Logger.Errorf("backup error: %v", err)
+					continue
+				}
+			}
+
+			func() {
+				Database.Close()
+				defer func(db *sql.DB) {
+					db, err := sql.Open("sqlite3", "blacklist.sqlite.db")
+					if err != nil {
+						logger.Logger.Fatalf("database reboot error: %v", err)
+					}
+					Running.Store(true)
+				}(Database)
+
+				Running.Store(false)
+				t := time.Now().Format("2006-01-02_15:04:05")
+				dst := fmt.Sprintf("blacklist_%s.sqlite.db", t)
+
+				out, err := os.Open("blacklist.sqlite.db")
+				if err != nil {
+					logger.Logger.Errorf("backup error: %v", err)
+					return
+				}
+				defer out.Close()
+
+				in, err := os.Create(dst)
+				if err != nil {
+					logger.Logger.Errorf("backup error: %v", err)
+					return
+				}
+				defer in.Sync()
+
+				_, err = io.Copy(in, out)
+				if err != nil {
+					logger.Logger.Errorf("backup error: %v", err)
+					return
+				}
+			}()
+		default:
+			continue
+		}
+	}
 }
