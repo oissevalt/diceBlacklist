@@ -10,6 +10,12 @@ import (
 var Logger *zap.SugaredLogger
 
 func init() {
+	cores := NewCores()
+	Logger = zap.New(cores, zap.AddCaller()).Sugar()
+	defer Logger.Sync()
+}
+
+func NewCores() zapcore.Core {
 	config := zap.NewProductionEncoderConfig()
 	config.EncodeTime = zapcore.ISO8601TimeEncoder
 	config.EncodeLevel = zapcore.CapitalLevelEncoder
@@ -24,8 +30,5 @@ func init() {
 	}), zapcore.DebugLevel)
 	termLog := zapcore.NewCore(enc, zapcore.AddSync(os.Stdout), zapcore.DebugLevel)
 
-	cores := zapcore.NewTee(mainLog, verbLog, termLog)
-
-	Logger = zap.New(cores, zap.AddCaller()).Sugar()
-	defer Logger.Sync()
+	return zapcore.NewTee(mainLog, verbLog, termLog)
 }

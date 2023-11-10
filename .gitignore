@@ -31,4 +31,5 @@ go.work
 appid.json
 *.db
 log
+backups
 *.log

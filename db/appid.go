@@ -9,10 +9,6 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-func init() {
-	clientId = []string{}
-}
-
 func ReadAppID() (err error) {
 	con, err := os.ReadFile("appid.json")
 	if err != nil {
