@@ -71,6 +71,7 @@ func Initialize() error {
 		return err
 	}
 
+	go backup(time.Hour * 24)
 	return nil
 }
 
@@ -175,31 +176,39 @@ func Remove(id string) (error, bool) {
 }
 
 func backup(interval time.Duration) {
+	t := time.NewTicker(interval)
+	defer t.Stop()
+
 	for {
 		select {
-		case <-time.After(interval):
-			logger.Logger.Debug("start backup, database down")
+		case <-t.C:
+			logger.Logger.Info("start backup, database down")
 
 			if s, err := os.Stat("backups"); err != nil || (s != nil && !s.IsDir()) {
 				if err = os.MkdirAll("backups", 0755); err != nil {
-					logger.Logger.Errorf("backup error: %v", err)
+					logger.Logger.Errorf("backup error: %v\n", err)
 					continue
 				}
 			}
 
 			func() {
 				Database.Close()
-				defer func(db *sql.DB) {
-					db, err := sql.Open("sqlite3", "blacklist.sqlite.db")
+				defer func() {
+					logger.Logger.Debug("restarting database")
+
+					var err error
+					Database, err = sql.Open("sqlite3", "blacklist.sqlite.db")
 					if err != nil {
 						logger.Logger.Fatalf("database reboot error: %v", err)
 					}
 					Running.Store(true)
-				}(Database)
+
+					logger.Logger.Info("database re-opened")
+				}()
 
 				Running.Store(false)
 				t := time.Now().Format("2006-01-02_15:04:05")
-				dst := fmt.Sprintf("blacklist_%s.sqlite.db", t)
+				dst := fmt.Sprintf("backups/blacklist_%s.sqlite.db", t)
 
 				out, err := os.Open("blacklist.sqlite.db")
 				if err != nil {
@@ -221,8 +230,6 @@ func backup(interval time.Duration) {
 					return
 				}
 			}()
-		default:
-			continue
 		}
 	}
 }
