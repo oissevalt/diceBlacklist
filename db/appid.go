@@ -4,8 +4,9 @@ import (
 	"diceBlacklist/logger"
 	"encoding/json"
 	"errors"
-	"github.com/fsnotify/fsnotify"
 	"os"
+
+	"github.com/fsnotify/fsnotify"
 )
 
 func init() {
@@ -61,14 +62,8 @@ func watcherFunc(w *fsnotify.Watcher) {
 			if !ok {
 				return
 			}
-			logger.Logger.Debugf(
-				"file watcher detected changes to %s: %v",
-				event.Name,
-				event.Op)
-			// Some editors create a temporary file, so they will trigger
-			// CHMOD, REMOVE and CREATE at once. For the sake of simplicity
-			// this is not planned to be handled.
-			if event.Has(fsnotify.Write) {
+
+			if event.Name == "appid.json" {
 				if err := ReadAppID(); err != nil {
 					logger.Logger.Errorf("failed to reload appid list: %v", err)
 					return
