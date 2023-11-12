@@ -9,14 +9,18 @@ import (
 	"net/http"
 )
 
-var port = 3518
+var (
+	port     = 3518
+	interval = 24
+)
 
 func main() {
 	logger.Logger.Debug("program started")
 	flag.IntVar(&port, "port", 3518, "Server port number.")
+	flag.IntVar(&interval, "interval", 24, "Backup interval (in hours). <= 0 for no backup.")
 	flag.Parse()
 
-	if err := db.Initialize(); err != nil {
+	if err := db.Initialize(interval); err != nil {
 		logger.Logger.Fatalf("database initialization error: %v", err)
 	}
 

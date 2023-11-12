@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"io"
 	"os"
 	"sync/atomic"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
@@ -54,7 +55,7 @@ type BlacklistItem struct {
 	Last   int64    `json:"latest"`
 }
 
-func Initialize() error {
+func Initialize(interval int) error {
 	err := ReadAppID()
 	if err != nil {
 		return err
@@ -71,7 +72,7 @@ func Initialize() error {
 		return err
 	}
 
-	go backup(time.Hour * 24)
+	go backup(time.Hour * time.Duration(interval))
 	return nil
 }
 
@@ -207,7 +208,7 @@ func backup(interval time.Duration) {
 				}()
 
 				Running.Store(false)
-				t := time.Now().Format("2006-01-02_15:04:05")
+				t := time.Now().Format("2006-01-02_150405")
 				dst := fmt.Sprintf("backups/blacklist_%s.sqlite.db", t)
 
 				out, err := os.Open("blacklist.sqlite.db")
