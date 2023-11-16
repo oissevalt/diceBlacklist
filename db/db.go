@@ -72,7 +72,7 @@ func Initialize(interval int) error {
 		return err
 	}
 
-	go backup(time.Hour * time.Duration(interval))
+	go backup(time.Minute)
 	return nil
 }
 
@@ -177,60 +177,57 @@ func Remove(id string) (error, bool) {
 }
 
 func backup(interval time.Duration) {
-	t := time.NewTicker(interval)
-	defer t.Stop()
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
 
-	for {
-		select {
-		case <-t.C:
-			logger.Logger.Info("start backup, database down")
+	for tick := range ticker.C {
+		logger.Logger.Info("start backup, database down")
 
-			if s, err := os.Stat("backups"); err != nil || (s != nil && !s.IsDir()) {
-				if err = os.MkdirAll("backups", 0755); err != nil {
-					logger.Logger.Errorf("backup error: %v\n", err)
-					continue
-				}
+		if s, err := os.Stat("backups"); err != nil || (s != nil && !s.IsDir()) {
+			if err = os.MkdirAll("backups", 0755); err != nil {
+				logger.Logger.Errorf("backup error: %v\n", err)
+				continue
 			}
-
-			func() {
-				Database.Close()
-				defer func() {
-					logger.Logger.Debug("restarting database")
-
-					var err error
-					Database, err = sql.Open("sqlite3", "blacklist.sqlite.db")
-					if err != nil {
-						logger.Logger.Fatalf("database reboot error: %v", err)
-					}
-					Running.Store(true)
-
-					logger.Logger.Info("database re-opened")
-				}()
-
-				Running.Store(false)
-				t := time.Now().Format("2006-01-02_150405")
-				dst := fmt.Sprintf("backups/blacklist_%s.sqlite.db", t)
-
-				out, err := os.Open("blacklist.sqlite.db")
-				if err != nil {
-					logger.Logger.Errorf("backup error: %v", err)
-					return
-				}
-				defer out.Close()
-
-				in, err := os.Create(dst)
-				if err != nil {
-					logger.Logger.Errorf("backup error: %v", err)
-					return
-				}
-				defer in.Sync()
-
-				_, err = io.Copy(in, out)
-				if err != nil {
-					logger.Logger.Errorf("backup error: %v", err)
-					return
-				}
-			}()
 		}
+
+		func() {
+			Database.Close()
+			defer func() {
+				logger.Logger.Debug("restarting database")
+
+				var err error
+				Database, err = sql.Open("sqlite3", "blacklist.sqlite.db")
+				if err != nil {
+					logger.Logger.Fatalf("database reboot error: %v", err)
+				}
+				Running.Store(true)
+
+				logger.Logger.Info("database re-opened")
+			}()
+
+			Running.Store(false)
+			t := tick.Format("2006-01-02_150405")
+			dst := fmt.Sprintf("backups/blacklist_%s.sqlite.db", t)
+
+			out, err := os.Open("blacklist.sqlite.db")
+			if err != nil {
+				logger.Logger.Errorf("backup error: %v", err)
+				return
+			}
+			defer out.Close()
+
+			in, err := os.Create(dst)
+			if err != nil {
+				logger.Logger.Errorf("backup error: %v", err)
+				return
+			}
+			defer in.Sync()
+
+			_, err = io.Copy(in, out)
+			if err != nil {
+				logger.Logger.Errorf("backup error: %v", err)
+				return
+			}
+		}()
 	}
 }
