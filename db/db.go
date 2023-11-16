@@ -72,7 +72,7 @@ func Initialize(interval int) error {
 		return err
 	}
 
-	go backup(time.Minute)
+	go backup(24 * time.Hour)
 	return nil
 }
 
